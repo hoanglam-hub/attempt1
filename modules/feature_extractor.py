@@ -1,26 +1,16 @@
 import numpy as np
+import cv2
 from utils import ear_calculate, mar_calculate
-from configs import left_eye_ear_index, right_eye_ear_index
+from configs import left_eye_ear_index, right_eye_ear_index, lip_mar_index, FACE_LANDMARKS, FACE_3D
 
 class FeatureExtractor:
-    def __init__(self):
-        self.FACE_LANDMARKS = [1, 152, 263, 33, 291, 57]  # nose, chin, left eye, right eye, left mouth, right mouth
-        self.FACE_3D = np.array([
-            (0.0, 0.0, 0.0),  # Nose tip
-            (0.0, -330.0, -65.0),  # Chin
-            (-225.0, 170.0, -135.0),  # Left eye left corner
-            (225.0, 170.0, -135.0),  # Right eye right corner
-            (-150.0, -150.0, -125.0),  # Left mouth corner
-            (150.0, -150.0, -125.0)  # Right mouth corner
-        ])
-
-    def extract(self, coordinate, frame_h, frame_w):
-        left_EAR = ear_calculate(left_eye_ear_index, coordinate)
-        right_EAR = ear_calculate(right_eye_ear_index, coordinate)
+    def extract(self, coordinates, frame_h, frame_w):
+        left_EAR = ear_calculate(left_eye_ear_index, coordinates)
+        right_EAR = ear_calculate(right_eye_ear_index, coordinates)
         EAR = (left_EAR + right_EAR) / 2
-        MAR = mar_calculate(lip_mar_index, coordinate)
+        MAR = mar_calculate(lip_mar_index, coordinates)
 
-        face_2D_points = np.array([coordinates[i] for i in self.FACE_LANDMARKS])
+        face_2D_points = np.array([coordinates[i] for i in FACE_LANDMARKS])
         camera_matrix = np.array(
             [
                 [frame_w, 0, frame_w / 2],
@@ -30,7 +20,7 @@ class FeatureExtractor:
         )
         dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
         # solve PnP
-        success, rotation_vector, translation_vector = cv2.solvePnP(self.FACE_3D, face_2D_points, camera_matrix,
+        success, rotation_vector, translation_vector = cv2.solvePnP(np.array(FACE_3D), face_2D_points, camera_matrix,
                                                                     dist_coeffs, flags=cv2.SOLVEPNP_ITERATIVE)
         # Convert rotation vector to rotation matrix
         rmat, _ = cv2.Rodrigues(rotation_vector)
